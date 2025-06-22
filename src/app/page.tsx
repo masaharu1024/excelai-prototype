@@ -14,14 +14,22 @@ export default function Home() {
     setMessages([...messages, newMessage]);
     setInput('');
 
-    const res = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: newMessage.content }),
-    });
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: newMessage.content }),
+      });
 
-    const data = await res.json();
-    setMessages([...messages, newMessage, { role: 'assistant', content: data.answer }]);
+      const data = await res.json();
+      console.log("🤖 Difyの返答:", data); // ✅ デバッグログ追加
+
+      const reply = data.answer ?? "❗️解答が取得できませんでした。もう一度お試しください。";
+      setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
+    } catch (error) {
+      console.error("❌ エラー:", error);
+      setMessages(prev => [...prev, { role: 'assistant', content: "⚠️ エラーが発生しました。後でもう一度お試しください。" }]);
+    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -42,16 +50,17 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-gray-100 p-4 flex flex-col items-center">
-      {/* サイトタイトルと説明 */}
+      {/* タイトルと説明 */}
       <div className="w-full max-w-screen-sm text-center mt-6">
         <h1 className="text-2xl sm:text-3xl font-bold mb-2">FormulaMate</h1>
-        <p className="text-sm sm:text-base text-gray-600 mb-4 px-2">自然言語で関数・マクロを生成するExcelアシスタント</p>
+        <p className="text-sm sm:text-base text-gray-600 mb-4 px-2">
+          自然言語で関数・マクロを生成するExcelアシスタント
+        </p>
       </div>
 
-      {/* ガイドエリア */}
+      {/* ガイド */}
       <div className="w-full max-w-screen-sm bg-white rounded-xl shadow-md p-4 mb-6">
         <h2 className="text-xl font-bold mb-2">🧠 このアプリでできること</h2>
-
         <div className="mb-4">
           <h3 className="font-semibold">📊 Excel関数</h3>
           <ul className="list-disc list-inside text-sm text-gray-700">
@@ -62,7 +71,6 @@ export default function Home() {
             <li>商品ごとの売上合計をSUMIFSで集計</li>
           </ul>
         </div>
-
         <div className="mb-4">
           <h3 className="font-semibold">⚙️ マクロ（VBA）</h3>
           <ul className="list-disc list-inside text-sm text-gray-700">
@@ -73,7 +81,6 @@ export default function Home() {
             <li>条件を満たす行を別シートに抽出</li>
           </ul>
         </div>
-
         <div>
           <h3 className="font-semibold">📁 アップロード応用</h3>
           <ul className="list-disc list-inside text-sm text-gray-700">
@@ -83,6 +90,7 @@ export default function Home() {
         </div>
       </div>
 
+      {/* チャット入力・表示 */}
       <div className="w-full max-w-screen-sm">
         <input
           type="file"
@@ -90,8 +98,9 @@ export default function Home() {
           onChange={handleFileUpload}
           className="mb-4"
         />
-        {fileName && <p className="text-sm mb-2 text-gray-600">📄 アップロード済み: {fileName}</p>}
-
+        {fileName && (
+          <p className="text-sm mb-2 text-gray-600">📄 アップロード済み: {fileName}</p>
+        )}
         <div className="flex mb-4">
           <input
             type="text"
@@ -103,7 +112,9 @@ export default function Home() {
           <button
             onClick={handleSend}
             className="bg-blue-600 text-white px-4 py-2 rounded-r text-sm hover:bg-blue-700"
-          >送信</button>
+          >
+            送信
+          </button>
         </div>
 
         <div className="space-y-2 text-sm">
@@ -111,9 +122,13 @@ export default function Home() {
             <div
               key={i}
               className={`p-2 rounded ${
-                msg.role === 'user' ? 'bg-blue-100 text-left' : 'bg-green-100 text-left'
+                msg.role === 'user'
+                  ? 'bg-blue-100 text-left'
+                  : 'bg-green-100 text-left'
               }`}
-            >{msg.content}</div>
+            >
+              {msg.content}
+            </div>
           ))}
         </div>
       </div>
