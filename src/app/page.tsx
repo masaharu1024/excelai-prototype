@@ -13,9 +13,19 @@ import {
 import { Light as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { atomOneLight } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 
+type ChatMessage = {
+  role: string;
+  content: string;
+};
+
+type ChatResponse = {
+  text: string;
+  error?: boolean;
+};
+
 export default function Home() {
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<{ role: string; content: string }[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [fileName, setFileName] = useState('');
   const [showModeSelect, setShowModeSelect] = useState(false);
@@ -54,10 +64,11 @@ export default function Home() {
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: input, mode }),
+      body: JSON.stringify({ messages: [...messages, newMsg], mode }),
     });
-    const data = await res.json();
-    setMessages((prev) => [...prev, { role: 'assistant', content: data.answer }]);
+    const data: ChatResponse = await res.json();
+
+    setMessages((prev) => [...prev, { role: 'assistant', content: data.text }]);
     setLoading(false);
   };
 
@@ -85,7 +96,7 @@ export default function Home() {
     reader.readAsBinaryString(file);
   };
 
-  const renderMessage = (msg: { role: string; content: string }, i: number) => {
+  const renderMessage = (msg: ChatMessage, i: number) => {
     const isUser = msg.role === 'user';
     const isCode = msg.content.includes('=') || msg.content.includes('Sub ');
 
@@ -118,13 +129,11 @@ export default function Home() {
 
   return (
     <main className="bg-white min-h-screen flex flex-col items-center p-4">
-      {/* ヘッダー */}
       <div className="w-full max-w-screen-sm text-center mb-2">
         <h1 className="text-3xl font-bold mb-1">FormulaMate</h1>
         <p className="text-sm text-gray-500">自然言語でExcel関数・マクロを生成</p>
       </div>
 
-      {/* モード選択と説明 */}
       <div className="w-full max-w-screen-sm mb-3 flex flex-col sm:flex-row sm:items-center sm:justify-start gap-3">
         <div className="relative">
           <button
@@ -153,22 +162,17 @@ export default function Home() {
             </div>
           )}
         </div>
-
-        {/* 説明文をすぐ右側に */}
         <p className="text-xs text-gray-500">{modeDescriptions[mode]}</p>
       </div>
 
-      {/* 境界線 */}
       <hr className="w-full max-w-screen-sm border-t border-gray-300 mb-3" />
 
-      {/* 会話ログ */}
       <div className="w-full max-w-screen-sm flex-1 overflow-y-auto space-y-2 mb-2 bg-gray-50 p-3 rounded-md shadow-inner">
         {messages.map(renderMessage)}
         {loading && <div className="text-sm text-gray-500">💬 回答を生成中...</div>}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* 入力欄 */}
       <div className="w-full max-w-screen-sm flex items-center gap-2 mt-auto">
         <label className="cursor-pointer text-gray-600 hover:text-black">
           <Paperclip size={20} />
@@ -195,7 +199,6 @@ export default function Home() {
         </button>
       </div>
 
-      {/* ファイル名表示 */}
       {fileName && (
         <p className="text-xs text-gray-500 mt-1 w-full max-w-screen-sm text-left pl-1">
           📎 {fileName} をアップロード済み
