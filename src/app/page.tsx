@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
-import { Paperclip } from 'lucide-react'; // アイコンライブラリ使用
+import { Paperclip, X } from 'lucide-react';
 
 export default function Home() {
   const [messages, setMessages] = useState<{ role: string; content: string }[]>([]);
@@ -10,6 +10,7 @@ export default function Home() {
   const [fileName, setFileName] = useState('');
   const [loading, setLoading] = useState(false);
   const [hintIndex, setHintIndex] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const hints = [
     '例：C列の合計を求める関数を教えて',
@@ -42,11 +43,8 @@ export default function Home() {
     setLoading(false);
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const processFile = (file: File) => {
     setFileName(file.name);
-
     const reader = new FileReader();
     reader.onload = (evt) => {
       const data = evt.target?.result;
@@ -64,6 +62,17 @@ export default function Home() {
     reader.readAsBinaryString(file);
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) processFile(file);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file) processFile(file);
+  };
+
   return (
     <main className="min-h-screen bg-gray-100 p-4 flex flex-col items-center">
       {/* ヘッダー */}
@@ -74,33 +83,52 @@ export default function Home() {
         </p>
       </div>
 
-      {/* チャットログ */}
-      <div className="w-full max-w-screen-sm space-y-2 text-sm mb-4">
+      {/* チャットログ（対話風に変更） */}
+      <div className="w-full max-w-screen-sm space-y-3 text-sm mb-4">
         {messages.map((msg, i) => (
           <div
             key={i}
-            className={`max-w-[85%] p-2 rounded-md whitespace-pre-wrap ${
-              msg.role === 'user'
-                ? 'ml-auto bg-blue-100 text-left'
-                : 'mr-auto bg-green-100 text-left'
-            }`}
+            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
-            {msg.content}
+            <div className="flex flex-col max-w-[75%]">
+              <div
+                className={`text-xs font-semibold mb-1 ${
+                  msg.role === 'user' ? 'text-right text-blue-500' : 'text-left text-green-600'
+                }`}
+              >
+                {msg.role === 'user' ? 'あなた' : 'FormulaMate'}
+              </div>
+              <div
+                className={`px-4 py-2 rounded-xl whitespace-pre-wrap shadow text-sm ${
+                  msg.role === 'user'
+                    ? 'bg-blue-100 text-gray-900 self-end rounded-br-none'
+                    : 'bg-green-100 text-gray-900 self-start rounded-bl-none'
+                }`}
+              >
+                {msg.content}
+              </div>
+            </div>
           </div>
         ))}
         {loading && (
-          <div className="text-sm text-gray-500 mr-auto bg-gray-100 px-3 py-2 rounded-md w-fit">
-            💬 回答を生成中...
+          <div className="flex justify-start">
+            <div className="px-4 py-2 bg-gray-100 rounded-xl text-sm text-gray-500 shadow">
+              💬 回答を生成中...
+            </div>
           </div>
         )}
       </div>
 
-      {/* 入力欄とファイルアップロード（UI修正版） */}
-      <div className="w-full max-w-screen-sm flex items-center gap-2">
-        {/* 📎 Paperclip アイコン付きアップロード */}
+      {/* 入力欄とファイルアップロード */}
+      <div
+        className="w-full max-w-screen-sm flex items-center gap-2"
+        onDrop={handleDrop}
+        onDragOver={(e) => e.preventDefault()}
+      >
         <label className="cursor-pointer text-gray-600 hover:text-black">
           <Paperclip size={20} />
           <input
+            ref={fileInputRef}
             type="file"
             accept=".xlsx,.xls"
             onChange={handleFileUpload}
@@ -123,11 +151,21 @@ export default function Home() {
         </button>
       </div>
 
-      {/* アップロード済みファイル名 */}
+      {/* アップロードファイル表示＋削除 */}
       {fileName && (
-        <p className="text-xs text-gray-500 mt-1 w-full max-w-screen-sm text-left pl-1">
-          📎 {fileName} をアップロード済み
-        </p>
+        <div className="w-full max-w-screen-sm flex justify-between items-center mt-2 bg-gray-100 px-3 py-2 rounded text-sm text-gray-700">
+          📄 {fileName}
+          <button
+            onClick={() => {
+              setFileName('');
+              if (fileInputRef.current) fileInputRef.current.value = '';
+            }}
+            className="text-red-500 hover:text-red-700"
+            title="アップロードを取り消す"
+          >
+            <X size={16} />
+          </button>
+        </div>
       )}
     </main>
   );
