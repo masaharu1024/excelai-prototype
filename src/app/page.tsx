@@ -7,6 +7,7 @@ export default function Home() {
   const [messages, setMessages] = useState<{ role: string; content: string }[]>([]);
   const [input, setInput] = useState('');
   const [fileName, setFileName] = useState('');
+  const [excelData, setExcelData] = useState<any[][]>([]); // ← 追加
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -14,22 +15,14 @@ export default function Home() {
     setMessages([...messages, newMessage]);
     setInput('');
 
-    try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: newMessage.content }),
-      });
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: newMessage.content,excelData }),
+    });
 
-      const data = await res.json();
-      console.log("🤖 Difyの返答:", data); // ✅ デバッグログ追加
-
-      const reply = data.answer ?? "❗️解答が取得できませんでした。もう一度お試しください。";
-      setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
-    } catch (error) {
-      console.error("❌ エラー:", error);
-      setMessages(prev => [...prev, { role: 'assistant', content: "⚠️ エラーが発生しました。後でもう一度お試しください。" }]);
-    }
+    const data = await res.json();
+    setMessages([...messages, newMessage, { role: 'assistant', content: data.answer }]);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -44,13 +37,13 @@ export default function Home() {
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
       console.log('📄 アップロードされたデータ:', jsonData);
+      setExcelData(jsonData); // ← 表示用に保存
     };
     reader.readAsBinaryString(file);
   };
 
   return (
     <main className="min-h-screen bg-gray-100 p-4 flex flex-col items-center">
-      {/* タイトルと説明 */}
       <div className="w-full max-w-screen-sm text-center mt-6">
         <h1 className="text-2xl sm:text-3xl font-bold mb-2">FormulaMate</h1>
         <p className="text-sm sm:text-base text-gray-600 mb-4 px-2">
@@ -58,9 +51,9 @@ export default function Home() {
         </p>
       </div>
 
-      {/* ガイド */}
       <div className="w-full max-w-screen-sm bg-white rounded-xl shadow-md p-4 mb-6">
         <h2 className="text-xl font-bold mb-2">🧠 このアプリでできること</h2>
+
         <div className="mb-4">
           <h3 className="font-semibold">📊 Excel関数</h3>
           <ul className="list-disc list-inside text-sm text-gray-700">
@@ -71,6 +64,7 @@ export default function Home() {
             <li>商品ごとの売上合計をSUMIFSで集計</li>
           </ul>
         </div>
+
         <div className="mb-4">
           <h3 className="font-semibold">⚙️ マクロ（VBA）</h3>
           <ul className="list-disc list-inside text-sm text-gray-700">
@@ -81,6 +75,7 @@ export default function Home() {
             <li>条件を満たす行を別シートに抽出</li>
           </ul>
         </div>
+
         <div>
           <h3 className="font-semibold">📁 アップロード応用</h3>
           <ul className="list-disc list-inside text-sm text-gray-700">
@@ -90,7 +85,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* チャット入力・表示 */}
       <div className="w-full max-w-screen-sm">
         <input
           type="file"
@@ -101,6 +95,7 @@ export default function Home() {
         {fileName && (
           <p className="text-sm mb-2 text-gray-600">📄 アップロード済み: {fileName}</p>
         )}
+
         <div className="flex mb-4">
           <input
             type="text"
@@ -131,6 +126,26 @@ export default function Home() {
             </div>
           ))}
         </div>
+
+        {/* 🔽 アップロードしたExcel表示用 */}
+        {excelData.length > 0 && (
+          <div className="bg-white rounded shadow p-4 mt-6 w-full overflow-auto text-sm">
+            <h3 className="font-semibold mb-2">📄 アップロード内容プレビュー</h3>
+            <table className="w-full border border-gray-300 text-xs">
+              <tbody>
+                {excelData.map((row, i) => (
+                  <tr key={i} className="border-b">
+                    {row.map((cell, j) => (
+                      <td key={j} className="border px-2 py-1 whitespace-nowrap">
+                        {cell}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </main>
   );
