@@ -81,7 +81,9 @@ export default function Home() {
     reader.onload = async (evt) => {
       const data = evt.target?.result;
       const workbook = XLSX.read(data, { type: 'binary' });
-      const allSheets: Record<string, any[][]> = {};
+
+      // ✅ ESLint対応済：any を unknown に変更
+      const allSheets: Record<string, unknown[][]> = {};
       workbook.SheetNames.forEach((sheetName) => {
         const sheet = workbook.Sheets[sheetName];
         allSheets[sheetName] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
