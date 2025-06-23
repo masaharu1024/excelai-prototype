@@ -1,45 +1,47 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server'
 
-type ExcelSheet = (string | number | boolean | null)[][];
-let latestExcelData: Record<string, ExcelSheet> | null = null;
-
-export async function POST(req: NextRequest) {
-  const { message }: { message: string } = await req.json();
-
-  const sheetPreview = latestExcelData
-    ? Object.entries(latestExcelData)
-        .map(([name, data]) => `▼ シート: ${name}\n${JSON.stringify(data).slice(0, 1000)}`)
-        .join('\n\n')
-    : null;
-
-  const prompt = sheetPreview
-    ? `以下のExcelデータを参考に、ユーザーの質問に答えてください。\n\n${sheetPreview}\n\n質問：${message}`
-    : `あなたはExcel関数とマクロの専門家です。次の質問に正確に答えてください：\n\n${message}`;
-
+export async function POST(req: Request) {
   try {
-    const res = await fetch(process.env.DIFY_API_URL!, {
+    const { messages, mode } = await req.json()
+
+    // Gemini API 呼び出し
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + process.env.GEMINI_API_KEY, {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.DIFY_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        query: prompt,
-        user: 'guest',
-        inputs: {},
-      }),
-    });
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              {
+                text: messages[messages.length - 1].content
+              }
+            ]
+          }
+        ]
+      })
+    })
 
-    const data = await res.json();
-    const answer = data?.answer || '❌ AIからの回答が得られませんでした';
-    return NextResponse.json({ answer });
+    if (!response.ok) {
+      const errorData = await response.json()
+      console.error('Gemini API Error:', errorData)
+
+      return NextResponse.json({
+        text: '⚠ Gemini APIが現在使えません（Quota超過またはエラー）',
+        error: true
+      })
+    }
+
+    const data = await response.json()
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '⚠ 返答が取得できませんでした'
+
+    return NextResponse.json({ text })
+
   } catch (err) {
-    return NextResponse.json({ answer: '❌ サーバーエラーが発生しました' });
+    console.error('API呼び出し時のエラー:', err)
+    return NextResponse.json({
+      text: '⚠ サーバーエラーが発生しました（Quotaまたは通信障害）',
+      error: true
+    })
   }
-}
-
-export async function PUT(req: NextRequest) {
-  const { sheets }: { sheets: Record<string, ExcelSheet> } = await req.json();
-  latestExcelData = sheets;
-  return NextResponse.json({ status: 'ok' });
 }
