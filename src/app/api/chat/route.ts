@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-let latestExcelData: any[][] | null = null;
+let latestExcelData: (string | number | boolean | null)[][] | null = null;
 
 export async function POST(req: NextRequest) {
   const { message } = await req.json();
@@ -30,7 +30,10 @@ export async function POST(req: NextRequest) {
     const data = await res.json();
     console.log("🤖 Difyの返答:", data);
 
-    const answer = data?.answer || 'AIからの回答が得られませんでした';
+    const answer = typeof data?.answer === 'string' && data.answer.length > 0
+      ? data.answer
+      : 'AIからの回答が得られませんでした';
+     
     return NextResponse.json({ answer });
   } catch (err) {
     console.error("❌ エラー:", err);
