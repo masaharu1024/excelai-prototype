@@ -1,40 +1,47 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(req: Request) {
-  const { message, excelData } = await req.json();
+let latestExcelData: any[][] | null = null;
+
+// グローバル変数に保存されたExcelデータを設定する関数
+export function setExcelData(data: any[][]) {
+  latestExcelData = data;
+}
+
+// APIハンドラ
+export async function POST(req: NextRequest) {
+  const body = await req.json();
+  const message = body.message;
 
   console.log("✅ 受け取ったメッセージ:", message);
-  console.log("📄 Excelデータ:", excelData?.length ? `${excelData.length} 行` : "なし");
+  console.log("📄 Excelデータ:", latestExcelData ? 'あり' : 'なし');
 
-  const prompt = `
-以下はアップロードされたExcelの表の内容の一部です（2次元配列）：
-${JSON.stringify(excelData).slice(0, 3000)}
+  // 表データ（最大3000文字）を切り出し
+  const sheetData = latestExcelData ? JSON.stringify(latestExcelData).slice(0, 3000) : null;
 
-この情報を参考にして、以下の質問に答えてください：
-${message}
-`;
+  // プロンプトを文脈付きに構築
+  const prompt = sheetData
+    ? `以下のExcelデータを参考にして、ユーザーの質問に答えてください：\n\n${sheetData}\n\n質問：${message}`
+    : message;
 
-  try {
-    const res = await fetch(process.env.DIFY_API_URL!, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.DIFY_API_KEY}`,
-        'Content-Type': 'application/json',
+  const difyRes = await fetch(process.env.DIFY_API_URL!, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.DIFY_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      query: prompt,
+      user: 'guest', // 固定ユーザー名（匿名）
+      inputs: {
+        uploaded_data: sheetData || '', // チャットフローでinputs.uploaded_dataを参照可能
       },
-      body: JSON.stringify({
-        inputs: {},
-        query: prompt,
-        user: 'guest',
-      }),
-    });
+    }),
+  });
 
-    const data = await res.json();
-    console.log("🤖 Difyの返答:", data);
+  const data = await difyRes.json();
+  console.log("🤖 Difyの返答:", data);
 
-    const answer = data?.answer || 'AIからの回答が得られませんでした';
-    return NextResponse.json({ answer });
-  } catch (error) {
-    console.error('❌ エラー:', error);
-    return NextResponse.json({ answer: 'エラーが発生しました。再度お試しください。' });
-  }
+  const answer = data?.answer || 'AIからの回答が得られませんでした';
+
+  return NextResponse.json({ answer });
 }
