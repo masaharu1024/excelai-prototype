@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ChatCompletionMessageParam, OpenAI } from 'openai';
+import OpenAI from 'openai';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// グローバルに保持（注意：サーバレス環境ではセッション維持されない場合あり）
-let sheetsData: Record<string, unknown[][]> = {};
+let sheetsData: Record<string, (string | number | null)[][]> = {};
 
 export async function PUT(req: NextRequest) {
   const body = await req.json();
@@ -29,7 +28,7 @@ export async function POST(req: NextRequest) {
     ? `以下はユーザーがアップロードしたExcelファイルの内容です。\n\n${Object.entries(sheetsData)
         .map(
           ([sheetName, rows]) =>
-            `▼ シート名: ${sheetName}\n${(rows as any[][])
+            `▼ シート名: ${sheetName}\n${rows
               .map((row) => row.join('\t'))
               .join('\n')}`
         )
@@ -38,7 +37,7 @@ export async function POST(req: NextRequest) {
 
   const systemPrompt = `${baseSystemPrompt}\n${modePrompt}\n\n${sheetPrompt}`;
 
-  const messages: ChatCompletionMessageParam[] = [
+  const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
     { role: 'system', content: systemPrompt },
     { role: 'user', content: input },
   ];
@@ -48,19 +47,22 @@ export async function POST(req: NextRequest) {
       model,
       messages,
       temperature: 0.2,
-      max_tokens: 2048, // ✅ 追加：応答の最大長を制限
+      max_tokens: 2048,
     });
 
     const choice = chat.choices[0];
 
-    // ✅ ログ追加：出力内容と完了理由を表示
     console.log('=== OPENAI RAW RESPONSE ===');
     console.log('Text:', choice.message.content);
     console.log('Finish reason:', choice.finish_reason);
 
-    return NextResponse.json({ text: choice.message.content+'*' });
-  } catch (e: any) {
-    console.error('OpenAI error:', e?.response?.data || e);
+    return NextResponse.json({ text: choice.message.content + '\u200B' });
+  } catch (e: unknown) {
+    if (e instanceof Error) {
+      console.error('OpenAI error:', e.message);
+    } else {
+      console.error('Unknown OpenAI error:', e);
+    }
     return NextResponse.json({ text: 'エラーが発生しました。', error: true });
   }
 }
