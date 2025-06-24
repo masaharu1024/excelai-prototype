@@ -1,3 +1,5 @@
+// ✅ 最新UI対応版：page.tsx（モデル選択＋説明付き + モード切替 + 応答送信）
+
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -12,6 +14,12 @@ import {
 } from 'lucide-react';
 import { Light as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { atomOneLight } from 'react-syntax-highlighter/dist/esm/styles/hljs';
+
+const modelDescriptions = {
+  'gpt-4o': '高精度で応答も速い、バランス重視のモデル',
+  'gpt-4': '精度は高いがやや遅め、丁寧な処理向き',
+  'gpt-3.5-turbo': '応答が非常に速い、軽い用途や試用におすすめ',
+};
 
 type ChatMessage = {
   role: string;
@@ -30,6 +38,8 @@ export default function Home() {
   const [fileName, setFileName] = useState('');
   const [showModeSelect, setShowModeSelect] = useState(false);
   const [mode, setMode] = useState<'advisor' | 'function' | 'vba'>('advisor');
+  const [model, setModel] = useState<'gpt-4o' | 'gpt-4' | 'gpt-3.5-turbo'>('gpt-4o');
+  const [showModelSelect, setShowModelSelect] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const modeLabels = {
@@ -64,10 +74,10 @@ export default function Home() {
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: [...messages, newMsg], mode }),
+      body: JSON.stringify({ input, mode, model }),
     });
-    const data: ChatResponse = await res.json();
 
+    const data: ChatResponse = await res.json();
     setMessages((prev) => [...prev, { role: 'assistant', content: data.text }]);
     setLoading(false);
   };
@@ -81,14 +91,11 @@ export default function Home() {
     reader.onload = async (evt) => {
       const data = evt.target?.result;
       const workbook = XLSX.read(data, { type: 'binary' });
-
-      // ✅ ESLint対応済：any を unknown に変更
       const allSheets: Record<string, unknown[][]> = {};
       workbook.SheetNames.forEach((sheetName) => {
         const sheet = workbook.Sheets[sheetName];
         allSheets[sheetName] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
       });
-
       await fetch('/api/chat', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -108,6 +115,11 @@ export default function Home() {
         className={`w-fit max-w-[85%] break-words px-3 py-2 rounded-lg text-sm whitespace-pre-wrap ${
           isUser ? 'ml-auto bg-gray-200 text-gray-900' : 'mr-auto bg-gray-100 text-gray-800'
         }`}
+        style={{
+          overflowX: 'hidden',
+          wordBreak: 'break-word',
+          whiteSpace: 'pre-wrap',
+        }}
       >
         {isCode ? (
           <SyntaxHighlighter
@@ -117,7 +129,9 @@ export default function Home() {
               background: 'transparent',
               padding: 0,
               margin: 0,
-              overflowX: 'auto',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+              overflowX: 'hidden',
             }}
           >
             {msg.content}
@@ -136,6 +150,7 @@ export default function Home() {
         <p className="text-sm text-gray-500">自然言語でExcel関数・マクロを生成</p>
       </div>
 
+      {/* モード選択UI */}
       <div className="w-full max-w-screen-sm mb-3 flex flex-col sm:flex-row sm:items-center sm:justify-start gap-3">
         <div className="relative">
           <button
@@ -165,6 +180,37 @@ export default function Home() {
           )}
         </div>
         <p className="text-xs text-gray-500">{modeDescriptions[mode]}</p>
+      </div>
+
+      {/* モデル選択UI */}
+      <div className="w-full max-w-screen-sm mb-3 flex flex-col sm:flex-row sm:items-center sm:justify-start gap-3">
+        <div className="relative">
+          <button
+            className="flex items-center gap-2 px-3 py-2 border rounded-md text-sm bg-gray-50 hover:bg-gray-100"
+            onClick={() => setShowModelSelect(!showModelSelect)}
+          >
+            🧠 {model}
+            {showModelSelect ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+          {showModelSelect && (
+            <div className="absolute left-0 top-full mt-1 border rounded-md bg-white shadow text-sm z-10 w-64">
+              {(['gpt-4o', 'gpt-4', 'gpt-3.5-turbo'] as const).map((m) => (
+                <div
+                  key={m}
+                  className="flex flex-col px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                  onClick={() => {
+                    setModel(m);
+                    setShowModelSelect(false);
+                  }}
+                >
+                  <span className="font-semibold">{m}</span>
+                  <span className="text-xs text-gray-500">{modelDescriptions[m]}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <p className="text-xs text-gray-500">{modelDescriptions[model]}</p>
       </div>
 
       <hr className="w-full max-w-screen-sm border-t border-gray-300 mb-3" />
