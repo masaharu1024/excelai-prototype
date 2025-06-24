@@ -5,6 +5,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// Excelファイルのシートデータ保持
 let sheetsData: Record<string, (string | number | null)[][]> = {};
 
 export async function PUT(req: NextRequest) {
@@ -14,7 +15,8 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { input, mode, model } = await req.json();
+  const { input, mode } = await req.json(); // ✅ model を受け取らない
+  const model = 'gpt-4o'; // ✅ モデルをサーバー側で固定
 
   const baseSystemPrompt = `あなたはExcelのプロです。`;
   const modePrompt =
