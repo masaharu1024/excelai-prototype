@@ -229,11 +229,16 @@ export default function Home() {
         <div ref={messagesEndRef} />
       </div>
 
+
+
       <div className="w-full max-w-screen-sm flex items-center gap-2 mt-auto">
-        <label className="cursor-pointer text-gray-600 hover:text-black">
-          <Paperclip size={20} />
+        {/* 統一感を持たせたファイルアップロードボタン */}
+        <label className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-800 cursor-pointer">
+          <Paperclip size={18} />
           <input type="file" accept=".xlsx,.xls" onChange={handleFileUpload} className="hidden" />
         </label>
+
+        {/* 入力フィールド */}
         <input
           type="text"
           value={input}
@@ -247,13 +252,35 @@ export default function Home() {
           placeholder="質問を入力"
           className="flex-1 border rounded px-3 py-2 text-sm"
         />
+
+        {/* 紙飛行機の送信ボタン */}
         <button
           onClick={handleSend}
-          className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700"
+          className="w-9 h-9 flex items-center justify-center rounded-full bg-blue-600 hover:bg-blue-700 text-white"
         >
-          送信
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M5 12l14-7-14 14v-5l10-2-10-2v-5z"
+            />
+          </svg>
         </button>
       </div>
+
+      {/* ファイル名表示 */}
+      {fileName && (
+        <p className="text-xs text-gray-500 mt-1 w-full max-w-screen-sm text-left pl-1">
+          📎 {fileName} をアップロード済み
+        </p>
+      )}
 
       {fileName && <p className="text-xs text-gray-500 mt-1 w-full max-w-screen-sm text-left pl-1">📎 {fileName} をアップロード済み</p>}
     </main>
