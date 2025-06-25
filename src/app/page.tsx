@@ -42,13 +42,13 @@ export default function Home() {
   };
 
   const modeLabels = {
-    advisor: 'アドバイザー', function: '関数メーカー', vba: 'VBAメーカー',
+    advisor: 'Advisor', function: 'Function', vba: 'VBA',
   };
 
   const modeDescriptions = {
-    advisor: '自然文の質問に柔軟に対応します。',
-    function: 'Excel関数を簡潔に生成します。',
-    vba: 'Excelマクロ（VBA）コードを出力します。',
+    advisor: 'Excel全般の質問に対応',
+    function: '自然言語からの関数生成',
+    vba: '自然言語からのVBA生成',
   };
 
   useEffect(() => {
@@ -141,13 +141,13 @@ export default function Home() {
         </div>
   <div className="flex gap-2 items-center">
   <button
-    className="w-9 h-9 flex items-center justify-center rounded-full bg-white hover:bg-gray-100 text-black"
+    className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-800"
     onClick={() => setShowGuide(true)}
   >
     <HelpCircle size={18} />
   </button>
   <button
-    className="w-9 h-9 flex items-center justify-center rounded-full bg-white hover:bg-gray-100 text-black"
+    className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-800"
     onClick={() => setShowNotice(true)}
   >
     <AlertTriangle size={18} />
@@ -171,16 +171,16 @@ export default function Home() {
             <div className="space-y-3 text-sm text-gray-700">
               <h3 className="font-bold">使い方のポイント</h3>
               <ul className="list-disc list-inside space-y-1">
-                <li>OpenAIの最新モデル（GPT-4o）を使用しています。</li>
+                <li>LLMにはOpenAIの最新モデル（GPT-4o）を使用しています。</li>
                 <li>モード切替で目的に応じた回答が得られます：
                   <ul className="list-disc list-inside ml-4 space-y-1">
                     <li>アドバイザー：自然文の質問に柔軟に対応</li>
-                    <li>関数メーカー：Excel関数のみを簡潔に出力</li>
+                    <li>関数メーカー：Excel関数を簡潔に出力</li>
                     <li>VBAメーカー：Excelマクロコードを生成</li>
                   </ul>
                 </li>
                 <li>Excelファイルをアップロードすると複数シートをまとめて解析できます。</li>
-                <li>自然文でそのまま質問できます（例：「平均点を出したい」）。</li>
+                <li>自然文でそのまま質問できます（例：「平均点を出したい」など）。</li>
                 <li>出力された関数やVBAはコピーしてExcelにそのまま貼り付け可能です。</li>
               </ul>
             </div>
@@ -196,8 +196,8 @@ export default function Home() {
             <div className="space-y-3 text-sm text-gray-700">
               <h3 className="font-bold">ご利用上の注意</h3>
               <ul className="list-disc list-inside space-y-1">
-                <li>アップロードされたファイルや質問内容は保存されません。</li>
-                <li>データは回答生成のために一時的に処理され、完了後に破棄されます。</li>
+                <li>アップロードされたファイルや質問内容はローカル・クラウドへ共に保存されません。</li>
+                <li>データは回答生成のために一時的にサーバー上で処理され、完了後に破棄されます。</li>
                 <li>ページを再読み込みするとアップロード情報はリセットされます。</li>
                 <li>複雑な質問や長文の場合、処理に時間がかかることがあります。</li>
                 <li>出力内容は参考情報です。業務で使用する場合はご自身で確認のうえご利用ください。</li>
@@ -212,7 +212,8 @@ export default function Home() {
       <div className="w-full max-w-screen-sm flex-1 overflow-y-auto space-y-2 mb-2 bg-gray-50 p-3 rounded-md shadow-inner">
         {messages.length === 0 && (
           <div className="text-sm text-gray-500 mb-2 space-y-2">
-            <p><strong>FormulaMate は、あなたの曖昧な疑問からでも Excelの関数やVBAコードを自動生成できるAIです。</strong></p>
+            <p><strong>FormulaMate は、曖昧なままの疑問や、具体化できていないExcelの目的に付き合ってくれるAIです。
+「こうしたいけど、どう書けば？」から始めて、最適な関数やVBAコードを提案します。</strong></p>
             <ul className="list-disc list-inside ml-4 space-y-1">
               <li>「前月の売上ってどう出すの？」<br className="sm:hidden" />→ 日付関数を含む式を自動生成</li>
               <li>「3つの条件で評価したい」<br className="sm:hidden" />→ IF関数をネストした複雑な式も対応</li>
